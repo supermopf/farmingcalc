@@ -37,12 +37,15 @@ class RestartClock extends React.Component {
           minutes,
           seconds
         };
-      }
+    }
 
     tick(){
         this.setState({
             untilRestart: this.getTimeRemaining(this.state.nextRestart)
-        })       
+        })     
+        if(this.state.untilRestart.total <= 0){
+            this.setNewRestartTime()
+        }
     }
 
     componentDidMount(){
