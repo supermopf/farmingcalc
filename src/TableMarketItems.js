@@ -2,6 +2,11 @@ import React, { Component } from 'react';
 import ItemChart from './ItemChart';
 import '../node_modules/react-vis/dist/style.css';
 import { DataGrid, numberComparer } from '@material-ui/data-grid';
+import TrendingUpIcon from '@material-ui/icons/TrendingUp';
+import TrendingFlatIcon from '@material-ui/icons/TrendingFlat';
+import TrendingDownIcon from '@material-ui/icons/TrendingDown';
+import { green, yellow,red } from '@material-ui/core/colors';
+import Grid from '@material-ui/core/Grid';
 
 class TableMarketItems extends React.Component {
   constructor(props) {
@@ -14,14 +19,14 @@ class TableMarketItems extends React.Component {
         { 
           field: 'chart',
           headerName: 'Kursverlauf (5 Tage)',
-          flex: 1,
+          flex: 1.2,
           renderCell: (params) => (
             <div>
               {params.value}
             </div>
           )
         },
-        { field: 'itemname', headerName: 'Name', flex: 0.5},
+        { field: 'itemname', headerName: 'Name', flex: 0.3},
         { field: 'id', headerName: 'Technischer Name', flex: 0.5, hide: true},
         { field: 'price', headerName: 'Aktueller Preis', type: "number", flex: 0.5 },
         { field: 'priceavg', headerName: 'Durchschnittspreis', type: "number", flex: 0.5 },
@@ -29,13 +34,42 @@ class TableMarketItems extends React.Component {
         { field: 'priceath', headerName: 'All-Time-High Preis', type: "number", flex: 0.5},
         { field: 'priceatl', headerName: 'All-Time-Low Preis', type: "number", flex: 0.5, hide: true},
         { 
+          field: 'pricechange',
+          headerName: 'Trend',
+          flex: 0.3,
+          type: "number",
+          renderCell: (params) => {
+            let icon;
+            if(params.value > 0){
+              //STOINK
+              icon = <TrendingUpIcon pr={3} style={{ color: green[500] }}/>
+            }else if(params.value < 0){
+              //DROP
+              icon = <TrendingDownIcon style={{ color: red[500] }}/>
+            }else{
+              //No Change
+              icon = <TrendingFlatIcon/>
+            }
+            return(
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                }}>
+                {icon}
+                <span style={{padding: 5}}>{params.value}</span>
+              </div>
+            )
+          }
+        },
+        { 
           field: 'pricecompare',
           headerName: 'Preisverhältnis zum ATH in %',
           flex: 0.5,
           valueGetter: this.compareATHPrice,
           type: "number",
         },
-        { field: 'size', headerName: 'Größe (Unverarbeitet)', type: "number", flex: 0.5},
+        { field: 'size', headerName: 'Größe', type: "number", flex: 0.25},
         { 
           field: 'profit',
           headerName: 'Gewinn pro Fuhre',
@@ -51,6 +85,11 @@ class TableMarketItems extends React.Component {
         },
       ],
       rows: [],
+      filterModel:{
+        items: [
+          { columnField: 'price', operatorValue: '>=', value: 160 },
+        ],
+      }
     };
   }
 
@@ -162,6 +201,8 @@ class TableMarketItems extends React.Component {
     let priceavg  = 0;
     let priceath  = 0;
     let priceatl  = 100000;
+    let pricechange = 0;
+    let previousprice = 0;
     let size  = ItemsSizes[id];
 
     if(illegal){
@@ -169,24 +210,23 @@ class TableMarketItems extends React.Component {
     }
 
     for (const [i,entry] of itemhistory.entries()) {
+      //AVG
       priceavg += entry.price
-    }
-    priceavg = Math.round(priceavg/itemhistory.length)
-
-    for (const [i,entry] of itemhistory.entries()) {
+      //ATH
       if (entry.price > priceath){
         priceath = entry.price
       }
-    }
-
-    for (const [i,entry] of itemhistory.entries()) {
+      //ATL
       if (entry.price < priceatl){
         priceatl = entry.price
       }
     }
+    priceavg = Math.round(priceavg/itemhistory.length)
+    previousprice = itemhistory[itemhistory.length-2].price
+    pricechange = item.price - previousprice //item.price because we dont want the bonus for that
 
     let chart     = <ItemChart item_data={itemhistory} priceavg={priceavg} priceath={priceath} priceatl={priceatl} />;
-    return {id, chart, itemname, price, priceavg, priceath, priceatl,size,illegal};
+    return {id, chart, itemname, price, priceavg, priceath, priceatl,size,illegal, pricechange};
   }
 
   updateRows(itemhistory){
@@ -214,11 +254,7 @@ class TableMarketItems extends React.Component {
           autoHeight
           rows={this.state.rows}
           columns={this.state.columns}
-          filterModel={{
-            items: [
-              { columnField: 'price', operatorValue: '>=', value: 160 },
-            ],
-          }}
+          filterModel={this.state.filterModel}
         /> 
       </div>      
     )

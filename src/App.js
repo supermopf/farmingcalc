@@ -37,6 +37,7 @@ class App extends React.Component {
         isRefreshing: false,
         ServerID: 1,
         timeuntilrestart: 0,
+        lastMarketUpdate: " ",
     };
   }
 
@@ -85,12 +86,13 @@ class App extends React.Component {
       });
       obj_items_history[item.item] = await this.getMarketPricesHistorical(item.item, 720); 
     }
-
+    console.log(obj_items_history)
     this.setState({
       police: (serverdata.hasOwnProperty("Side")? serverdata.Side.Cops.length : 0),
       items: items,
       items_history: obj_items_history,
-      isFetching: false
+      isFetching: false,
+      lastMarketUpdate: new Date(obj_items_history.apple[obj_items_history.apple.length-1].created_at).toLocaleTimeString()
     });
     this.refreshPricesTicker = setInterval(() => this.refreshPrices(), 60000)
   }
@@ -103,7 +105,9 @@ class App extends React.Component {
     let obj_items_history = this.state.items_history;
 
     for (const [i,item] of items.entries()) {
-      obj_items_history[item.item].push(item)
+      if(item.created_at != obj_items_history[item.item][obj_items_history[item.item].length-1].created_at){
+        obj_items_history[item.item].push(item)
+      }
     }
 
     this.setState({
@@ -112,6 +116,7 @@ class App extends React.Component {
       items_history: obj_items_history,
       isRefreshing: false,    
       refreshrows: true,
+      lastMarketUpdate: new Date(obj_items_history.apple[obj_items_history.apple.length-1].created_at).toLocaleTimeString()
     })
   }
 
@@ -215,6 +220,9 @@ class App extends React.Component {
                     </Grid>
                     <Grid item position="right" xs={1} >
                         <RestartClock/>
+                    </Grid>
+                    <Grid item position="right" xs={2} >
+                      <TextField disabled={true} id="lastMarketUpdate" label="Letztes Marktupdate" value={this.state.lastMarketUpdate}/>
                     </Grid>
                     <Grid item position="right" xs={1} >
                       {this.state.isRefreshing? <CircularProgress /> : null }
