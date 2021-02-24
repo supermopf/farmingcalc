@@ -29,7 +29,9 @@ class TableMarketItems extends React.Component {
         { field: 'itemname', headerName: 'Name', flex: 0.3},
         { field: 'id', headerName: 'Technischer Name', flex: 0.5, hide: true},
         { field: 'price', headerName: 'Aktueller Preis', type: "number", flex: 0.5 },
-        { field: 'priceavg', headerName: 'Durchschnittspreis', type: "number", flex: 0.5 },
+        { field: 'rawprice', headerName: 'Preis ohne Bonus', type: "number", flex: 0.5 , hide: true},
+        { field: 'multiplier', headerName: 'Bonus durch Polizei', type: "number", flex: 0.5 , hide: true},
+        { field: 'priceavg', headerName: 'Ø Preis', type: "number", flex: 0.25 },
         { field: 'illegal', headerName: 'Illegal', flex: 0.5 , hide: true},
         { field: 'priceath', headerName: 'All-Time-High Preis', type: "number", flex: 0.5},
         { field: 'priceatl', headerName: 'All-Time-Low Preis', type: "number", flex: 0.5, hide: true},
@@ -42,7 +44,7 @@ class TableMarketItems extends React.Component {
             let icon;
             if(params.value > 0){
               //STOINK
-              icon = <TrendingUpIcon pr={3} style={{ color: green[500] }}/>
+              icon = <TrendingUpIcon style={{ color: green[500] }}/>
             }else if(params.value < 0){
               //DROP
               icon = <TrendingDownIcon style={{ color: red[500] }}/>
@@ -198,15 +200,17 @@ class TableMarketItems extends React.Component {
     }
 
     let illegal   = IllegalItems.includes(item.item);
+    let multiplier = illegal ? bonus[this.props.police].multiplier : 1
     let priceavg  = 0;
     let priceath  = 0;
+    let rawprice  = item.price;
     let priceatl  = 100000;
     let pricechange = 0;
     let previousprice = 0;
     let size  = ItemsSizes[id];
 
     if(illegal){
-      price = Math.floor(price * bonus[this.props.police].multiplier)
+      price = Math.floor(price * multiplier)
     }
 
     for (const [i,entry] of itemhistory.entries()) {
@@ -223,10 +227,10 @@ class TableMarketItems extends React.Component {
     }
     priceavg = Math.round(priceavg/itemhistory.length)
     previousprice = itemhistory[itemhistory.length-2].price
-    pricechange = item.price - previousprice //item.price because we dont want the bonus for that
+    pricechange = rawprice - previousprice
 
     let chart     = <ItemChart item_data={itemhistory} priceavg={priceavg} priceath={priceath} priceatl={priceatl} />;
-    return {id, chart, itemname, price, priceavg, priceath, priceatl,size,illegal, pricechange};
+    return {id, chart, itemname, price, priceavg, priceath, priceatl,size,illegal, pricechange, rawprice, multiplier};
   }
 
   updateRows(itemhistory){
@@ -239,7 +243,7 @@ class TableMarketItems extends React.Component {
   }
 
   compareATHPrice(params) {
-    return (params.getValue('price') / params.getValue('priceath')*100).toFixed(2);
+    return (params.getValue('rawprice') / params.getValue('priceath')*100).toFixed(2);
   }
   calcInventoryProfit(params) {
     return (Math.floor(this.props.inventory/params.getValue('size'))*params.getValue('price'));
