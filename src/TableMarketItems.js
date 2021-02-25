@@ -149,7 +149,8 @@ class TableMarketItems extends React.Component {
       "white_russian",
       "lsd",
       "rum",
-      "vodka"
+      "vodka",
+      "weaponparts_r",
     ]
     const ItemsSizes = {
         "copper_r": 4,
