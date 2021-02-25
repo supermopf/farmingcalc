@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import {XYPlot, XAxis ,YAxis, LineSeries, HorizontalGridLines} from 'react-vis';
 import {timeFormatDefaultLocale} from 'd3-time-format';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -14,8 +14,6 @@ timeFormatDefaultLocale({
     "shortMonths": ["Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 });
 
-const API = 'https://api.realliferpg.de';
-const ServerID = 1;
 
 class ItemChart extends React.Component {
   constructor(props) {
@@ -25,6 +23,7 @@ class ItemChart extends React.Component {
       isFetching: false,
     };
   }
+
 
   generateChart(){
     let temphistory = [];  
@@ -36,9 +35,9 @@ class ItemChart extends React.Component {
             yDomain={[Math.max(0, this.props.priceatl - 10), this.props.priceath + 10]}
             height={250}
             width={400}>
-            <LineSeries data={temphistory} />
+            <LineSeries data={temphistory} color={"#1769aa"} />
             <HorizontalGridLines />
-            <LineSeries data={[{x: Date.now() - 5 * 24 * 60 * 60 * 1000,y: this.props.priceavg},{x: Date.now(),y: this.props.priceavg}]} color="red" />
+            <LineSeries data={[{x: Date.now() - 5 * 24 * 60 * 60 * 1000,y: this.props.priceavg},{x: Date.now(),y: this.props.priceavg}]} color="#ab003c" />
             <XAxis tickTotal={5} />
             <YAxis/>
         </XYPlot>

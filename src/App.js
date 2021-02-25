@@ -1,4 +1,5 @@
-import React, { Component } from 'react';
+import React from 'react';
+import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import TableMarketItems from './TableMarketItems';
 import '../node_modules/react-vis/dist/style.css';
 import TextField from '@material-ui/core/TextField';
@@ -12,6 +13,11 @@ import Box from '@material-ui/core/Box';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import RestartClock from './RestartClock';
+import Brightness3Icon from '@material-ui/icons/Brightness3';
+import Brightness7Icon from '@material-ui/icons/Brightness7';
+import IconButton from '@material-ui/core/IconButton';
+import MenuIcon from '@material-ui/icons/Menu';
+
 
 const API = 'https://api.realliferpg.de';
  
@@ -22,6 +28,7 @@ class App extends React.Component {
     this.handlePlayerChange = this.handlePlayerChange.bind(this);
     this.handleVehicleChange = this.handleVehicleChange.bind(this);
     this.onRowRefresh = this.onRowRefresh.bind(this);
+    this.toggleDarkmode = this.toggleDarkmode.bind(this);
 
     this.state = {
         value : "",
@@ -38,6 +45,7 @@ class App extends React.Component {
         ServerID: 1,
         timeuntilrestart: 0,
         lastMarketUpdate: " ",
+        DarkModeEnabled: JSON.parse(localStorage.getItem('DarkModeEnabled')) || false,
     };
   }
 
@@ -86,7 +94,6 @@ class App extends React.Component {
       });
       obj_items_history[item.item] = await this.getMarketPricesHistorical(item.item, 720); 
     }
-    console.log(obj_items_history)
     this.setState({
       police: (serverdata.hasOwnProperty("Side")? serverdata.Side.Cops.length : 0),
       items: items,
@@ -104,8 +111,8 @@ class App extends React.Component {
     let items = await this.getMarketPrices();
     let obj_items_history = this.state.items_history;
 
-    for (const [i,item] of items.entries()) {
-      if(item.created_at != obj_items_history[item.item][obj_items_history[item.item].length-1].created_at){
+    for (const [,item] of items.entries()) {
+      if(item.created_at !== obj_items_history[item.item][obj_items_history[item.item].length-1].created_at){
         obj_items_history[item.item].push(item)
       }
     }
@@ -168,7 +175,28 @@ class App extends React.Component {
     localStorage.setItem("vehicleinv",value)
   }
 
+  toggleDarkmode(){
+    localStorage.setItem("DarkModeEnabled",!this.state.DarkModeEnabled)    
+    this.setState({DarkModeEnabled: !this.state.DarkModeEnabled})    
+  }
+
   render(){
+    const darkModeButton = this.state.DarkModeEnabled ? <Brightness7Icon /> : <Brightness3Icon /> 
+
+    let themeSelected = createMuiTheme({
+      palette: {
+        type: "light",
+      },
+    }) 
+
+    if(this.state.DarkModeEnabled){
+      themeSelected = createMuiTheme({
+        palette: {
+          type: "dark",
+        },
+      })
+    }
+
     let table = null
     if(this.state.isFetching === true){
         table = (
@@ -193,17 +221,26 @@ class App extends React.Component {
          />
         )
     }
+
     
     return(
-        <div>
+       
+        <ThemeProvider theme={themeSelected}>
             <CssBaseline/>
             <AppBar position="static">
                 <Toolbar>
-                    <Typography variant="h6">
+                    <IconButton edge="start" color="inherit" aria-label="menu">
+                      <MenuIcon />
+                    </IconButton>
+                    <Typography variant="h6" style={{ flex: 1 }}>
                     Familie Fugges fleißiger Feldrechner für Fachmärkte
                     </Typography>
-                </Toolbar>
+                    <IconButton edge="start" color="inherit" aria-label="darkmode" onClick={this.toggleDarkmode}>
+                      {darkModeButton}
+                    </IconButton>
+                </Toolbar>           
             </AppBar>
+
             <Box m={2} />
             <Container maxWidth="xl">
                 <Grid container spacing={3}>
@@ -227,14 +264,13 @@ class App extends React.Component {
                     </Grid>
                     <Grid item position="right" xs={1} >
                       {this.state.isRefreshing? <CircularProgress /> : null }
-                    </Grid>
-                    
+                    </Grid>                    
                     <Grid item xs={12}>
                         {table}
                     </Grid>
                 </Grid>
             </Container>
-        </div>
+        </ThemeProvider>
     )
   }
 } 

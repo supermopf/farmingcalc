@@ -1,12 +1,11 @@
-import React, { Component } from 'react';
+import React from 'react';
 import ItemChart from './ItemChart';
 import '../node_modules/react-vis/dist/style.css';
-import { DataGrid, numberComparer } from '@material-ui/data-grid';
+import { DataGrid } from '@material-ui/data-grid';
 import TrendingUpIcon from '@material-ui/icons/TrendingUp';
 import TrendingFlatIcon from '@material-ui/icons/TrendingFlat';
 import TrendingDownIcon from '@material-ui/icons/TrendingDown';
-import { green, yellow,red } from '@material-ui/core/colors';
-import Grid from '@material-ui/core/Grid';
+import { green, red } from '@material-ui/core/colors';
 
 class TableMarketItems extends React.Component {
   constructor(props) {
@@ -213,7 +212,7 @@ class TableMarketItems extends React.Component {
       price = Math.floor(price * multiplier)
     }
 
-    for (const [i,entry] of itemhistory.entries()) {
+    for (const [,entry] of itemhistory.entries()) {
       //AVG
       priceavg += entry.price
       //ATH
