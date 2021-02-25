@@ -152,6 +152,7 @@ class App extends React.Component {
         {playerinv: value,
             allinv: this.calcnewInventory(value, this.state.vehicleinv)
         });
+    localStorage.setItem("playerinv",value)
   }
   handleVehicleChange(event) {
     let value = 0
