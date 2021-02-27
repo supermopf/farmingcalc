@@ -1,5 +1,5 @@
 import React from 'react';
-import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
+import {createMuiTheme, ThemeProvider} from '@material-ui/core/styles';
 import TableMarketItems from './TableMarketItems';
 import '../node_modules/react-vis/dist/style.css';
 import TextField from '@material-ui/core/TextField';
@@ -20,8 +20,14 @@ import MenuIcon from '@material-ui/icons/Menu';
 
 
 const API = 'https://api.realliferpg.de';
- 
+/**
+ * App Component
+ */
 class App extends React.Component {
+  /**
+   * Properties der Komponente
+   * @param {*} props
+   */
   constructor(props) {
     super(props);
 
@@ -31,247 +37,348 @@ class App extends React.Component {
     this.toggleDarkmode = this.toggleDarkmode.bind(this);
 
     this.state = {
-        value : "",
-        playerinv: localStorage.getItem('playerinv') || 135,
-        vehicleinv: localStorage.getItem('vehicleinv') || 0,
-        allinv: this.calcnewInventory((localStorage.getItem('playerinv') || 135),(localStorage.getItem('vehicleinv') || 0)),
-        police: 0,
-        progress: 0,
-        progress_name: "",
-        items: [],
-        items_history: [],
-        isFetching: false,
-        isRefreshing: false,
-        ServerID: 1,
-        timeuntilrestart: 0,
-        lastMarketUpdate: " ",
-        DarkModeEnabled: JSON.parse(localStorage.getItem('DarkModeEnabled')) || false,
+      value: '',
+      playerinv: localStorage.getItem('playerinv') || 135,
+      vehicleinv: localStorage.getItem('vehicleinv') || 0,
+      allinv: this.calcnewInventory(
+          (localStorage.getItem('playerinv') || 135),
+          (localStorage.getItem('vehicleinv') || 0),
+      ),
+      police: 0,
+      progress: 0,
+      progress_name: '',
+      items: [],
+      items_history: [],
+      isFetching: false,
+      isRefreshing: false,
+      ServerID: 1,
+      timeuntilrestart: 0,
+      lastMarketUpdate: ' ',
+      DarkModeEnabled: JSON.parse(
+          localStorage.getItem('DarkModeEnabled')) || false,
     };
   }
-
-  async getServerData(){
+  /**
+   * Holt Server Daten von API
+   */
+  async getServerData() {
     return await fetch(API + '/v1/servers')
-    .then(response => response.json())
-    .then(data => {
-      return data.data[0];
-    })
+        .then((response) => response.json())
+        .then((data) => {
+          return data.data[0];
+        });
   }
-
-  async getMarketPrices(){
+  /**
+   * Holt Marktpreise von API
+   */
+  async getMarketPrices() {
     return await fetch(API + '/v1/market/' + this.state.ServerID)
-      .then(response => response.json())
-      .then(data => {
-        return data.data;
-      })
+        .then((response) => response.json())
+        .then((data) => {
+          return data.data;
+        });
   }
-
-  async getMarketPricesHistorical(itemname, range = 720){
-    return await fetch(API + '/v1/market_logs/'+ this.state.ServerID +'/'+ itemname +'/'+ range)
-    .then(response => response.json())
-    .then(data => {
-      data.data[0].sort(function (a,b) {
-        if(a.created_at > b.created_at){
-          return 1
-        }else{
-          return -1
-        }
-      })
-      return data.data[0];
-    })
+  /**
+   * Holt historisce Martpreise von API
+   * @param {string} itemname
+   * @param {int} range
+   */
+  async getMarketPricesHistorical(itemname, range = 720) {
+    return await fetch(
+        API + '/v1/market_logs/'+
+        this.state.ServerID + '/'+
+        itemname +'/'+
+        range,
+    )
+        .then((response) => response.json())
+        .then((data) => {
+          data.data[0].sort(function(a, b) {
+            if (a.created_at > b.created_at) {
+              return 1;
+            } else {
+              return -1;
+            }
+          });
+          return data.data[0];
+        });
   }
-
-  async fetchItems(){
+  /**
+   * Holt Items und ruft deren histroischen Preise ab
+   */
+  async fetchItems() {
     this.setState({isFetching: true});
 
-    let serverdata = await this.getServerData();
-    let items = await this.getMarketPrices();
-    let obj_items_history = [];
+    const serverdata = await this.getServerData();
+    const items = await this.getMarketPrices();
+    const ItemsHistory = [];
 
-    for (const [i,item] of items.entries()) {
+    for (const [i, item] of items.entries()) {
       this.setState({
         progress: i/items.length*100,
-        progress_name: item.localized
+        progress_name: item.localized,
       });
-      obj_items_history[item.item] = await this.getMarketPricesHistorical(item.item, 720); 
+      ItemsHistory[item.item] = (
+        await this.getMarketPricesHistorical(item.item, 720)
+      );
     }
     this.setState({
-      police: (serverdata.hasOwnProperty("Side")? serverdata.Side.Cops.length : 0),
+      police: (
+        serverdata.hasOwnProperty('Side')? serverdata.Side.Cops.length : 0
+      ),
       items: items,
-      items_history: obj_items_history,
+      items_history: ItemsHistory,
       isFetching: false,
-      lastMarketUpdate: new Date(obj_items_history.apple[obj_items_history.apple.length-1].created_at).toLocaleTimeString()
+      lastMarketUpdate: (
+        new Date(
+            ItemsHistory.apple[ItemsHistory.apple.length-1].created_at,
+        ).toLocaleTimeString()
+      ),
     });
-    this.refreshPricesTicker = setInterval(() => this.refreshPrices(), 60000)
+    this.refreshPricesTicker = setInterval(() => this.refreshPrices(), 60000);
   }
-
-  async refreshPrices(){
+  /**
+   * Holt aktuelle Marktpreise und fügt sie bei Update hinzu
+   */
+  async refreshPrices() {
     this.setState({isRefreshing: true});
 
-    let serverdata = await this.getServerData()
-    let items = await this.getMarketPrices();
-    let obj_items_history = this.state.items_history;
+    const serverdata = await this.getServerData();
+    const items = await this.getMarketPrices();
+    const ItemsHistory = this.state.items_history;
 
-    for (const [,item] of items.entries()) {
-      if(item.created_at !== obj_items_history[item.item][obj_items_history[item.item].length-1].created_at){
-        obj_items_history[item.item].push(item)
+    for (const [, item] of items.entries()) {
+      if (item.created_at !== ItemsHistory[item.item][
+          ItemsHistory[item.item].length-1].created_at) {
+        ItemsHistory[item.item].push(item);
       }
     }
 
     this.setState({
-      police: (serverdata.hasOwnProperty("Side")? serverdata.Side.Cops.length : 0),
+      police: (
+        serverdata.hasOwnProperty('Side')? serverdata.Side.Cops.length : 0
+      ),
       items: items,
-      items_history: obj_items_history,
-      isRefreshing: false,    
+      items_history: ItemsHistory,
+      isRefreshing: false,
       refreshrows: true,
-      lastMarketUpdate: new Date(obj_items_history.apple[obj_items_history.apple.length-1].created_at).toLocaleTimeString()
-    })
+      lastMarketUpdate: (
+        new Date(
+            ItemsHistory.apple[ItemsHistory.apple.length-1].created_at,
+        ).toLocaleTimeString()
+      ),
+    });
   }
 
-  async componentDidMount(){
-    this.fetchItems()
+  /**
+   * Komponente wurde geladen
+   */
+  async componentDidMount() {
+    this.fetchItems();
   }
 
-  componentWillUnmount(){
-    clearInterval(this.refreshPricesTicker)
+  /**
+  * Komponente wird entladen
+  */
+  componentWillUnmount() {
+    clearInterval(this.refreshPricesTicker);
   }
 
-  calcnewInventory(value1, value2){
-    let result = 0
+  /**
+   * Berechnet die Inventargröße
+   * @param {*} value1
+   * @param {*} value2
+   * @return {int}
+   */
+  calcnewInventory(value1, value2) {
+    let result = 0;
     result = (
-        (value1 ? parseInt(value1) : 0) + 
+      (value1 ? parseInt(value1) : 0) +
         (value2 ? parseInt(value2) : 0)
-    )
-    return result
+    );
+    return result;
   }
 
-  onRowRefresh(){
-    this.setState({refreshrows: false})
+  /**
+   * Event wenn Zeilen geupdated wurden
+   */
+  onRowRefresh() {
+    this.setState({refreshrows: false});
   }
 
+  /**
+   * Spielerinventar wird verändert
+   * @param {*} event
+   */
   handlePlayerChange(event) {
-    let value = 0
-    if(event.target.value < 0){
-        value = 0
-    }else{
-        value = event.target.value
+    let value = 0;
+    if (event.target.value < 0) {
+      value = 0;
+    } else {
+      value = event.target.value;
     }
     this.setState(
         {playerinv: value,
-            allinv: this.calcnewInventory(value, this.state.vehicleinv)
+          allinv: this.calcnewInventory(value, this.state.vehicleinv),
         });
-    localStorage.setItem("playerinv",value)
+    localStorage.setItem('playerinv', value);
   }
+
+  /**
+   * Fahrzeuginventar wird verändert
+   * @param {*} event
+   */
   handleVehicleChange(event) {
-    let value = 0
-    if(event.target.value < 0){
-        value = 0
-    }else{
-        value = event.target.value
+    let value = 0;
+    if (event.target.value < 0) {
+      value = 0;
+    } else {
+      value = event.target.value;
     }
     this.setState(
         {vehicleinv: value,
-            allinv: this.calcnewInventory(value, this.state.playerinv)
+          allinv: this.calcnewInventory(value, this.state.playerinv),
         });
-    localStorage.setItem("vehicleinv",value)
+    localStorage.setItem('vehicleinv', value);
   }
 
-  toggleDarkmode(){
-    localStorage.setItem("DarkModeEnabled",!this.state.DarkModeEnabled)    
-    this.setState({DarkModeEnabled: !this.state.DarkModeEnabled})    
+  /**
+   * Wechselt den Darkmode
+   */
+  toggleDarkmode() {
+    localStorage.setItem('DarkModeEnabled', !this.state.DarkModeEnabled);
+    this.setState({DarkModeEnabled: !this.state.DarkModeEnabled});
   }
 
-  render(){
-    const darkModeButton = this.state.DarkModeEnabled ? <Brightness7Icon /> : <Brightness3Icon /> 
+  /**
+   * Rendert die Komponente
+   * @return {object}
+   */
+  render() {
+    const darkModeButton = (
+      this.state.DarkModeEnabled ? <Brightness7Icon /> : <Brightness3Icon />
+    );
 
     let themeSelected = createMuiTheme({
       palette: {
-        type: "light",
+        type: 'light',
       },
-    }) 
+    });
 
-    if(this.state.DarkModeEnabled){
+    if (this.state.DarkModeEnabled) {
       themeSelected = createMuiTheme({
         palette: {
-          type: "dark",
+          type: 'dark',
         },
-      })
+      });
     }
 
-    let table = null
-    if(this.state.isFetching === true){
-        table = (
-            <div>
-            <LinearProgress variant="determinate" value={this.state.progress}/>
-            <Box display="flex">
-              <Typography variant="overline">
+    let table = null;
+    if (this.state.isFetching === true) {
+      table = (
+        <div>
+          <LinearProgress variant="determinate" value={this.state.progress}/>
+          <Box display="flex">
+            <Typography variant="overline">
               Lade Preise für {this.state.progress_name}
-              </Typography>
-            </Box>
-          </div>
-        )
-    }else{
-        table = (
-            <TableMarketItems 
-            items = {this.state.items}
-            items_history = {this.state.items_history}
-            inventory={this.state.allinv}
-            police={this.state.police}
-            refreshrows={this.state.refreshrows}
-            onRowRefesh={this.onRowRefresh}
-         />
-        )
+            </Typography>
+          </Box>
+        </div>
+      );
+    } else {
+      table = (
+        <TableMarketItems
+          items = {this.state.items}
+          items_history = {this.state.items_history}
+          inventory={this.state.allinv}
+          police={this.state.police}
+          refreshrows={this.state.refreshrows}
+          onRowRefesh={this.onRowRefresh}
+        />
+      );
     }
 
-    
-    return(
-       
-        <ThemeProvider theme={themeSelected}>
-            <CssBaseline/>
-            <AppBar position="static">
-                <Toolbar>
-                    <IconButton edge="start" color="inherit" aria-label="menu">
-                      <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" style={{ flex: 1 }}>
-                    Familie Fugges fleißiger Feldrechner für Fachmärkte
-                    </Typography>
-                    <IconButton edge="start" color="inherit" aria-label="darkmode" onClick={this.toggleDarkmode}>
-                      {darkModeButton}
-                    </IconButton>
-                </Toolbar>           
-            </AppBar>
 
-            <Box m={2} />
-            <Container maxWidth="xl">
-                <Grid container spacing={3}>
-                    <Grid item xs={1}>
-                        <TextField id="playerinv" label="Z-Inventar" type="number" onChange={this.handlePlayerChange} value={this.state.playerinv}/>
-                    </Grid>
-                    <Grid item xs={1}>
-                        <TextField id="vehicleinv" label="Fahrzeug-Inventar" type="number" onChange={this.handleVehicleChange} value={this.state.vehicleinv}/>
-                    </Grid>
-                    <Grid item xs={1}>
-                        <TextField disabled={true} id="allinv" label="Gesamt" value={this.state.allinv}/>
-                    </Grid>
-                    <Grid item position="right" xs={1}>
-                        <TextField disabled={true} id="police" label="Polizisten" value={this.state.police}/>
-                    </Grid>
-                    <Grid item position="right" xs={1} >
-                        <RestartClock/>
-                    </Grid>
-                    <Grid item position="right" xs={2} >
-                      <TextField disabled={true} id="lastMarketUpdate" label="Letztes Marktupdate" value={this.state.lastMarketUpdate}/>
-                    </Grid>
-                    <Grid item position="right" xs={1} >
-                      {this.state.isRefreshing? <CircularProgress /> : null }
-                    </Grid>                    
-                    <Grid item xs={12}>
-                        {table}
-                    </Grid>
-                </Grid>
-            </Container>
-        </ThemeProvider>
-    )
+    return (
+
+      <ThemeProvider theme={themeSelected}>
+        <CssBaseline/>
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton edge="start" color="inherit" aria-label="menu">
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" style={{flex: 1}}>
+                    Familie Fugges fleißiger Feldrechner für Fachmärkte
+            </Typography>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="darkmode"
+              onClick={this.toggleDarkmode}
+            >
+              {darkModeButton}
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+
+        <Box m={2} />
+        <Container maxWidth="xl">
+          <Grid container spacing={3}>
+            <Grid item xs={1}>
+              <TextField
+                id="playerinv"
+                label="Z-Inventar"
+                type="number"
+                onChange={this.handlePlayerChange}
+                value={this.state.playerinv}
+              />
+            </Grid>
+            <Grid item xs={1}>
+              <TextField
+                id="vehicleinv"
+                label="Fahrzeug-Inventar"
+                type="number"
+                onChange={this.handleVehicleChange}
+                value={this.state.vehicleinv}
+              />
+            </Grid>
+            <Grid item xs={1}>
+              <TextField
+                disabled={true}
+                id="allinv"
+                label="Gesamt"
+                value={this.state.allinv}
+              />
+            </Grid>
+            <Grid item position="right" xs={1}>
+              <TextField
+                disabled={true}
+                id="police"
+                label="Polizisten"
+                value={this.state.police}
+              />
+            </Grid>
+            <Grid item position="right" xs={1} >
+              <RestartClock/>
+            </Grid>
+            <Grid item position="right" xs={2} >
+              <TextField
+                disabled={true}
+                id="lastMarketUpdate"
+                label="Letztes Marktupdate"
+                value={this.state.lastMarketUpdate}
+              />
+            </Grid>
+            <Grid item position="right" xs={1} >
+              {this.state.isRefreshing? <CircularProgress /> : null }
+            </Grid>
+            <Grid item xs={12}>
+              {table}
+            </Grid>
+          </Grid>
+        </Container>
+      </ThemeProvider>
+    );
   }
-} 
+}
 export default App;
